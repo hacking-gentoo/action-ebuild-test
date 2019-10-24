@@ -1,0 +1,5 @@
+name: 'action-ebuild-test'
+description: 'Install an ebuild and test it'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
