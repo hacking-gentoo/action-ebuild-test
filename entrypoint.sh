@@ -65,11 +65,6 @@ unexpand --first-only -t 4 ".gentoo/${ebuild_path}" > "${repo_path}/${repo_id}/$
 cp ".gentoo/${ebuild_cat}/${ebuild_pkg}/metadata.xml" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/"
 ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" manifest
 
-# Run repoman in the repository
-pushd "${repo_path}/${repo_id}" >/dev/null
-repoman || die "RepoMan detected QA violations"
-popd
-
 # Enable test use-flag for package
 update_use "${ebuild_cat}/${ebuild_pkg}" "+test"
 
