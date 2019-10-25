@@ -15,10 +15,10 @@ cd "${GITHUB_WORKSPACE}" || exit 2
 [[ -d .gentoo ]] || die "No .gentoo directory in workspace root"
 
 # Try to find the overlays file and add any overlays it contains
-if [[ -f overlays ]]; then
+if [[ -f .gentoo/overlays ]]; then
     while IFS= read overlay
     do
-        add_overlay ${overlay}
+        [[ -n "${overlay}" ]] && add_overlay ${overlay}
     done
 fi
 
