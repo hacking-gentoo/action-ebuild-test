@@ -77,5 +77,17 @@ emerge --autounmask y --autounmask-write y --autounmask-only y "${ebuild_cat}/${
 etc-update --automode -5
 emerge --onlydeps "${ebuild_cat}/${ebuild_pkg}::${repo_id}" || die "Unable to merge dependencies"
 
-# Install and test the ebuild
-FEATURES="test" emerge "${ebuild_cat}/${ebuild_pkg}::${repo_id}" || die "Package failed to merge"
+# Test the ebuild
+ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" test || die "Package failed tests"
+
+# Try to find the coverage script, if it exists and we have a CODECOV_TOKEN execute it and try to upload
+# the coverage report
+if [[ -x .gentoo/coverage.sh ]] && [[ -n "${CODECOV_TOKEN}" ]]; then
+    pushd "/var/tmp/portage/${ebuild_cat}/${ebuild_pkg}-9999/work/${ebuild_pkg}-9999/" >/dev/null
+    "${GITHUB_WORKSPACE}/.gentoo/coverage.sh" || die "Test coverage report generation failed"
+    popd
+    /usr/local/bin/codecov -s /var/tmp/coverage -B "${GITHUB_REF##*/}" || die "Unable to upload coverage report"
+fi
+
+# Merge the ebuild
+ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" merge || die "Package failed merge"
