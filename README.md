@@ -90,6 +90,7 @@ kcov --bash-dont-parse-binary-dir \
      bats -t tests
 ```
 
-This is an example using `bats` and `kcov`, although many other combinations of test runner and 
+This is an example using [bats](https://github.com/bats-core/bats-core) and 
+[kcov](https://github.com/SimonKagstrom/kcov), although many other combinations of test runner and 
 coverage report generator should be possible. The important point to note is that coverage reports
 should be placed in `/var/tmp/coverage` so they can be located by the upload tool.
