@@ -3,3 +3,6 @@ description: 'Install an ebuild and test it'
 runs:
   using: 'docker'
   image: 'Dockerfile'
+branding:
+  icon: 'thumbs-up'
+  color: 'purple'
