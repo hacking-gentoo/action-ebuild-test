@@ -83,6 +83,7 @@ ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" test
 # Try to find the coverage script, if it exists and we have a CODECOV_TOKEN execute it and try to upload
 # the coverage report
 if [[ -x .gentoo/coverage.sh ]] && [[ -n "${CODECOV_TOKEN}" ]]; then
+    chmod g+rX -R /var/tmp/portage
     pushd "/var/tmp/portage/${ebuild_cat}/${ebuild_pkg}-9999/work/${ebuild_pkg}-9999/" >/dev/null
     "${GITHUB_WORKSPACE}/.gentoo/coverage.sh" || die "Test coverage report generation failed"
     popd
