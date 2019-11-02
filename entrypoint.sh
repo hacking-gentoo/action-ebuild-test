@@ -63,9 +63,16 @@ mkdir -p "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}" "${repo_path}/${r
 echo "masters = gentoo" >> "${repo_path}/${repo_id}/metadata/layout.conf"
 unexpand --first-only -t 4 ".gentoo/${ebuild_path}" > "${repo_path}/${repo_id}/${ebuild_path}"
 cp ".gentoo/${ebuild_cat}/${ebuild_pkg}/metadata.xml" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/"
-GITHUB_REF=${GITHUB_REF##*/}
+github_branch="${GITHUB_REF##*/}"
+
+echo "------------------------------------------------------------------------------------------------------"
+echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}"
+echo "GITHUB_REF=${GITHUB_REF}"
+echo "github_branch=${github_branch}"
+echo "------------------------------------------------------------------------------------------------------"
+
 sed-or-die "GITHUB_REPOSITORY" "${GITHUB_REPOSITORY}" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}"
-sed-or-die "GITHUB_REF" "${GITHUB_REF:-master}" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}"
+sed-or-die "GITHUB_REF" "${github_branch:-master}" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}"
 ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" manifest
 
 # Enable test use-flag for package
