@@ -4,8 +4,30 @@ set -e
 function die()
 {
     echo "::error::$1"
+	echo "------------------------------------------------------------------------------------------------------------------------"
     exit 1
 }
+
+[[ ${GITHUB_REF} = refs/heads/* ]] && git_branch="${GITHUB_REF##*/}"
+[[ ${GITHUB_REF} = refs/tags/* ]] &&git_tag="${GITHUB_REF##*/}"
+
+cat << END
+------------------------------------------------------------------------------------------------------------------------
+                            _   _                       _           _ _     _        _            _   
+                           | | (_)                     | |         (_) |   | |      | |          | |  
+                  __ _  ___| |_ _  ___  _ __ ______ ___| |__  _   _ _| | __| |______| |_ ___  ___| |_ 
+                 / _\` |/ __| __| |/ _ \| '_ \______/ _ \ '_ \| | | | | |/ _\` |______| __/ _ \/ __| __|
+                | (_| | (__| |_| | (_) | | | |    |  __/ |_) | |_| | | | (_| |      | ||  __/\__ \ |_ 
+                 \__,_|\___|\__|_|\___/|_| |_|     \___|_.__/ \__,_|_|_|\__,_|       \__\___||___/\__|
+
+                https://github.com/hacking-gentoo/action-ebuild-test              (c) 2019 Max Hacking 
+------------------------------------------------------------------------------------------------------------------------
+GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
+GITHUB_REF=${GITHUB_REF}
+git_branch=${git_branch}
+git_tag=${git_tag}
+------------------------------------------------------------------------------------------------------------------------
+END
 
 # Check for a GITHUB_WORKSPACE env variable
 [[ -z "${GITHUB_WORKSPACE}" ]] && die "Must set GITHUB_WORKSPACE in env"
@@ -16,8 +38,9 @@ cd "${GITHUB_WORKSPACE}" || exit 2
 
 # Try to find the overlays file and add any overlays it contains
 if [[ -f .gentoo/overlays ]]; then
-    while IFS= read overlay
+    while IFS= read -r overlay
     do
+    	# shellcheck disable=SC2086
         [[ -n "${overlay}" ]] && add_overlay ${overlay}
     done
 fi
@@ -63,16 +86,8 @@ mkdir -p "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}" "${repo_path}/${r
 echo "masters = gentoo" >> "${repo_path}/${repo_id}/metadata/layout.conf"
 unexpand --first-only -t 4 ".gentoo/${ebuild_path}" > "${repo_path}/${repo_id}/${ebuild_path}"
 cp ".gentoo/${ebuild_cat}/${ebuild_pkg}/metadata.xml" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/"
-github_branch="${GITHUB_REF##*/}"
-
-echo "------------------------------------------------------------------------------------------------------"
-echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}"
-echo "GITHUB_REF=${GITHUB_REF}"
-echo "github_branch=${github_branch}"
-echo "------------------------------------------------------------------------------------------------------"
-
 sed-or-die "GITHUB_REPOSITORY" "${GITHUB_REPOSITORY}" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}"
-sed-or-die "GITHUB_REF" "${github_branch:-master}" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}"
+sed-or-die "GITHUB_REF" "${git_branch:-master}" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}"
 ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" manifest
 
 # Enable test use-flag for package
@@ -99,3 +114,5 @@ fi
 
 # Merge the ebuild
 ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" merge || die "Package failed merge"
+
+echo "------------------------------------------------------------------------------------------------------------------------"
