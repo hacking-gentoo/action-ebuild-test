@@ -42,7 +42,7 @@ if [[ -f .gentoo/overlays ]]; then
     do
     	# shellcheck disable=SC2086
         [[ -n "${overlay}" ]] && add_overlay ${overlay}
-    done
+	done < .gentoo/overlays
 fi
 
 # Create a test repository for the ebuild under test
