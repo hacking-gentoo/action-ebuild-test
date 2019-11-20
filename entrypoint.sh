@@ -93,7 +93,7 @@ sed-or-die "GITHUB_REF" "${git_branch:-master}" "${repo_path}/${repo_id}/${ebuil
 ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" manifest
 
 # Enable test use-flag for package
-update_use "${ebuild_cat}/${ebuild_pkg}" "+test"
+update_use "${ebuild_cat}/${ebuild_pkg}" "test"
 
 # Install dependencies of test ebuild
 emerge --autounmask y --autounmask-write y --autounmask-only y "${ebuild_cat}/${ebuild_pkg}::${repo_id}" || \
