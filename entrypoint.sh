@@ -101,9 +101,6 @@ emerge --autounmask y --autounmask-write y --autounmask-only y "${ebuild_cat}/${
 etc-update --automode -5
 emerge --onlydeps "${ebuild_cat}/${ebuild_pkg}::${repo_id}" || die "Unable to merge dependencies"
 
-# Remove any git source downloads.
-rm -rf "${GITHUB_WORKSPACE}/distfiles/git3-src/"*
-
 # Test the ebuild
 ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" test || die "Package failed tests"
 
