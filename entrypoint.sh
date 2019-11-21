@@ -114,6 +114,10 @@ if [[ -x .gentoo/coverage.sh ]] && [[ -n "${CODECOV_TOKEN}" ]]; then
     codecov -s /var/tmp/coverage -B "${GITHUB_REF##*/}" || die "Unable to upload coverage report"
 fi
 
+# Clean any distfiles or binary packages
+eclean-pkg --deep
+eclean-dist --deep
+
 # Merge the ebuild
 ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" merge || die "Package failed merge"
 
