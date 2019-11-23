@@ -45,16 +45,9 @@ if [[ -f .gentoo/overlays ]]; then
 	done < .gentoo/overlays
 fi
 
-# Create a test repository for the ebuild under test
-repo_id="action-ebuild-test"
-repo_priority="50"
+# We will use the test-repo for the ebuild under test
+repo_id="test-repo"
 repo_path="/var/db/repos"
-mkdir -p "${repo_path}/${repo_id}"
-tee /etc/portage/repos.conf/"${repo_id}".conf >/dev/null <<END
-[${repo_id}]
-priority = ${repo_priority}
-location = ${repo_path}/${repo_id}
-END
 
 # Find the ebuild to test and strip the .gentoo/ prefix 
 # e.g. dev-libs/hacking-bash-lib/hacking-bash-lib-9999.ebuild
