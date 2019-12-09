@@ -1,5 +1,10 @@
 name: 'action-ebuild-test'
 description: 'Install an ebuild and test it'
+inputs:
+  package_only:
+    description: 'This is a package only ebuild for upstream source code.'
+    required: false
+    default: false
 runs:
   using: 'docker'
   image: 'Dockerfile'
