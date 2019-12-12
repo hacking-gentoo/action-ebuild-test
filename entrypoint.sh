@@ -97,7 +97,7 @@ etc-update --automode -5
 emerge --onlydeps "${ebuild_cat}/${ebuild_pkg}::${repo_id}" || die "Unable to merge dependencies"
 
 # Test the ebuild
-ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" test || die "Package failed tests"
+TERM="dumb" ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" test || die "Package failed tests"
 
 # Try to find the coverage script, if it exists and we have a CODECOV_TOKEN execute it and try to upload
 # the coverage report
