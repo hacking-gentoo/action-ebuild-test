@@ -79,8 +79,8 @@ mkdir -p "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}" "${repo_path}/${r
 echo "masters = gentoo" >> "${repo_path}/${repo_id}/metadata/layout.conf"
 echo "${ebuild_cat}" >> "${repo_path}/${repo_id}/profiles/categories"
 echo "${repo_id}" >> "${repo_path}/${repo_id}/profiles/repo_name"
+cp -r ".gentoo/${ebuild_cat}/${ebuild_pkg}"/* "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/"
 unexpand --first-only -t 4 ".gentoo/${ebuild_path}" > "${repo_path}/${repo_id}/${ebuild_path}"
-cp ".gentoo/${ebuild_cat}/${ebuild_pkg}/metadata.xml" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/"
 if [[ "${INPUT_PACKAGE_ONLY}" != "true" ]]; then
 	sed-or-die "GITHUB_REPOSITORY" "${GITHUB_REPOSITORY}" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}"
 	sed-or-die "GITHUB_REF" "${git_branch:-master}" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}"
