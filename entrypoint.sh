@@ -8,8 +8,63 @@ function die()
     exit 1
 }
 
+function infomsg()
+{
+	echo -e "\n${1}\n"
+}
+
+
+function create_pull_request() 
+{
+	local src tgt title body draft api_ver base_url auth_hdr header pulls_url repo_base query_url resp pr data
+	
+    src="${1}"		# from this branch
+    tgt="${2}"		# pull request TO this target
+    title="${3}"	# pull request title
+    body="${4}"		# this is the content of the message
+
+	[[ -z "${src}" ]] && die "create_pull_request() requires a source branch as parameter 1"
+	[[ -z "${tgt}" ]] && die "create_pull_request() requires a target branch as parameter 2"
+	[[ -z "${title}" ]] && die "create_pull_request() requires a title as parameter 3"
+	[[ -z "${body}" ]] && die "create_pull_request() requires a body as parameter 4"
+
+    if [[ "${5}" ==  "true" ]]; then
+      draft="true";
+    else
+      draft="false";
+    fi
+
+	api_ver="v3"
+	base_url="https://api.github.com"
+	auth_hdr="Authorization: token ${INPUT_AUTH_TOKEN}"
+	header="Accept: application/vnd.github.${api_ver}+json; application/vnd.github.antiope-preview+json; application/vnd.github.shadow-cat-preview+json"
+	pulls_url="${base_url}/repos/${INPUT_OVERLAY_REPO}/pulls"
+	repo_base="${INPUT_OVERLAY_REPO%/*}"
+
+    # Check if the branch already has a pull request open
+    query_url="${pulls_url}?base=${tgt}&head=${repo_base}:${src}&state=open"
+    echo "curl -sSL -H \"${auth_hdr}\" -H \"${header}\" --user \"${GITHUB_ACTOR}:\" -X GET \"${query_url}\""
+    resp=$(curl -sSL -H "${auth_hdr}" -H "${header}" --user "${GITHUB_ACTOR}:" -X GET "${query_url}")
+    echo -e "Raw response:\n${resp}"
+    pr=$(echo "${resp}" | jq --raw-output '.[] | .head.ref')
+    echo "Response ref: ${pr}"
+
+    if [[ -n "${pr}" ]]; then
+	    # A pull request is already open
+        echo "Pull request from ${src} to ${tgt} is already open!"
+    else
+        # Post new pull request
+        data="{ \"base\":\"${tgt}\", \"head\":\"${src}\", \"title\":\"${title}\", \"body\":\"${body}\", \"draft\":${draft} }"
+        echo "curl -sSL -H \"${auth_hdr}\" -H \"${header}\" --user \"${GITHUB_ACTOR}:\" -X POST --data \"${data}\" \"${pulls_url}\""
+        curl -sSL -H "${auth_hdr}" -H "${header}" --user "${GITHUB_ACTOR}:" -X POST --data "${data}" "${pulls_url}" || \
+        	die "Unable to create pull request"
+    fi
+}
+
+SEMVER_REGEX="^(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*$"
+
 [[ ${GITHUB_REF} = refs/heads/* ]] && git_branch="${GITHUB_REF##*/}"
-[[ ${GITHUB_REF} = refs/tags/* ]] &&git_tag="${GITHUB_REF##*/}"
+[[ ${GITHUB_REF} = refs/tags/* ]] && git_tag="${GITHUB_REF##*/}"
 
 cat << END
 ------------------------------------------------------------------------------------------------------------------------
@@ -22,10 +77,12 @@ cat << END
 
                 https://github.com/hacking-gentoo/action-ebuild-test              (c) 2019 Max Hacking 
 ------------------------------------------------------------------------------------------------------------------------
-GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
-GITHUB_REF=${GITHUB_REF}
-git_branch=${git_branch}
-git_tag=${git_tag}
+INPUT_PACKAGE_ONLY="${INPUT_PACKAGE_ONLY}"
+GITHUB_ACTOR="${GITHUB_ACTOR}"
+GITHUB_REPOSITORY="${GITHUB_REPOSITORY}"
+GITHUB_REF="${GITHUB_REF}"
+git_branch="${git_branch}"
+git_tag="${git_tag}"
 ------------------------------------------------------------------------------------------------------------------------
 END
 
