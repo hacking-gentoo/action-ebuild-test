@@ -88,9 +88,70 @@ fi
 # Merge the ebuild
 merge_ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}"
 
-# Clean any distfiles or binary packages
-clean_binary_packages
-clean_distfiles
+# If we don't have an overlay_repo input defined then we're done
+if [[ -z "${INPUT_OVERLAY_REPO}" ]]; then
+	# Clean any distfiles or binary packages
+	clean_binary_packages
+	clean_distfiles
+	
+	# We're done!
+	finish "Done!"
+fi
+
+# There is an overlay_repo input defined so we need to (maybe) update the
+# live ebuild or metadata.xml.
+
+# Check for repository deploy key.
+[[ -z "${INPUT_DEPLOY_KEY}" ]] && die "Must set INPUT_DEPLOY_KEY"
+
+# Calculate overlay branch name
+overlay_branch="${INPUT_OVERLAY_BRANCH:-${ebuild_cat}/${ebuild_pkg}}"
+
+# Configure ssh
+configure_ssh "${INPUT_DEPLOY_KEY}"
+
+# Configure git
+configure_git "${GITHUB_ACTOR}"
+
+# Checkout the overlay (master).
+checkout_overlay_master "${INPUT_OVERLAY_REPO}"
+
+# Check out the branch or create a new one
+checkout_or_create_overlay_branch "${overlay_branch}"
+
+# Try to rebase.
+rebase_overlay_branch
+
+# Add the overlay to repos.conf
+repo_name="$(configure_overlay)"
+
+# Ensure that this ebuild's category is present in categories file.
+check_ebuild_category "${ebuild_cat}"
+
+# Copy everything from the template to the new ebuild directory.
+copy_ebuild_directory "${ebuild_cat}" "${ebuild_pkg}"
+
+# Create the new ebuild - 9999 live version.
+create_live_ebuild "${ebuild_cat}" "${ebuild_pkg}" "${ebuild_name}"
+
+# Add it to git
+git_add_files
+
+# Check it with repoman
+repoman_check
+
+# Commit the new ebuild.
+if git_commit "Automated update of ${ebuild_cat}/${ebuild_pkg} live ebuild / metadata"; then
+	# Push git repo branch
+	git_push "${overlay_branch}"
+	
+	# Create a pull request
+	if [[ -n "${INPUT_AUTH_TOKEN}" ]]; then
+		title="Automated release of ${ebuild_cat}/${ebuild_pkg}"
+		msg="Automatically generated pull request to update overlay for release of ${ebuild_cat}/${ebuild_pkg}"
+		create_pull_request "${overlay_branch}" "master" "${title}" "${msg}" "false" 
+	fi
+fi
 
 # We're done!
 finish "Done!"
