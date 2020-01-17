@@ -1,6 +1,18 @@
 name: 'action-ebuild-test'
 description: 'Install an ebuild and test it'
 inputs:
+  auth_token:
+    description: 'The authentiation token to use when creating pull requests.'
+    required: true
+  deploy_key:
+    description: 'The deploy key used when accessing the overlay repository.'
+    required: true
+  overlay_repo:
+    description: 'The overlay repository to operate on (eg. hacking-gentoo/overlay)'
+    required: true
+  overlay_branch:
+    description: 'The repository branch to operate on. If none specified a topic branch named after the category/package will be used.'
+    required: false
   package_only:
     description: 'This is a package only ebuild for upstream source code.'
     required: false
