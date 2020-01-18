@@ -123,6 +123,7 @@ checkout_or_create_overlay_branch "${overlay_branch}"
 rebase_overlay_branch
 
 # Add the overlay to repos.conf
+# shellcheck disable=SC2034
 repo_name="$(configure_overlay)"
 
 # Ensure that this ebuild's category is present in categories file.
