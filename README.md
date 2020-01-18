@@ -3,24 +3,13 @@
 Automatically install an ebuild (including dependencies), run unit tests and (optionally) upload 
 coverage reports to [codecov.io](https://codecov.io/).
 
-## Basic Usage
+## Basic Use
 
-An example workflow:
+### 1. Create a `.gentoo` folder in the root of your repository.
 
-```yaml
-name: Ebuild Tests
+### 2. Create a live ebuild template in the appropriate sub-directory.
 
-on: [push]
-
-jobs:
-  tests:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - uses: hacking-gentoo/action-ebuild-test@master
-```
-
-You will also need to create an ebuild template:
+`.gentoo/dev-libs/hacking-bash-lib/hacking-bash-lib-9999.ebuild`
 
 ```bash
 # Copyright 1999-2019 Gentoo Authors
@@ -28,58 +17,83 @@ You will also need to create an ebuild template:
 
 EAPI=7
 
-DESCRIPTION="A test package"
-HOMEPAGE="https://github.com/hacking-actions/test-package"
-LICENSE="MIT"
+DESCRIPTION="A library script to log output and manage the generated log files"
+HOMEPAGE="https://github.com/GITHUB_REPOSITORY"
+LICENSE="LGPL-3"
 
 if [[ ${PV} = *9999* ]]; then
     inherit git-r3
     EGIT_REPO_URI="https://github.com/GITHUB_REPOSITORY"
     EGIT_BRANCH="GITHUB_REF"
 else
-    SRC_URI="https://github.com/GITHUB_REPOSITORY/archive/${P}.tar.gz"
+    SRC_URI="https://github.com/GITHUB_REPOSITORY/archive/${PV}.tar.gz -> ${P}.tar.gz"
 fi
 
-KEYWORDS="amd64 x86"
+KEYWORDS=""
 IUSE="test"
 SLOT="0"
 
 RESTRICT="!test? ( test )"
 
-RDEPEND=""
-DEPEND="test? ( ${RDEPEND} )"
+RDEPEND="app-arch/bzip2
+    mail-client/mutt
+    sys-apps/util-linux"
+DEPEND="test? (
+    ${RDEPEND}
+    dev-util/bats-assert
+    dev-util/bats-file
+)"
 
 src_test() {
-    ...
+    bats --tap tests || die "Tests failed"
 }
 
 src_install() {
-    ...
+    einstalldocs
+
+    insinto /usr/lib
+    doins usr/lib/*
 }
 ```
 
-And the usual [metadata.xml](https://devmanual.gentoo.org/ebuild-writing/misc-files/metadata/index.html)
+The special markers `GITHUB_REPOSITORY` and `GITHUB_REF` will be automatically replaced with appropriate values
+when the action is executed.
 
-## Coverage Reports
+### 3. Create a metadata.xml file
 
-To produce test coverage reports a `CODECOV_TOKEN` must be supplied in the step `env`:
+`.gentoo/dev-libs/hacking-bash-lib/metadata.xml`
 
-```yaml
-name: Test Coverage
+```xml
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
 
-on: [push]
-
-jobs:
-  coverage:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - uses: hacking-actions/bats-kcov@master
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+<pkgmetadata>
+    <maintainer type="person">
+        <email>overlay-maintainer@example.com</email>
+        <name>Overlay Maintainer</name>
+    </maintainer>
+    <upstream>
+        <maintainer>
+	    <email>default-package-maintainer@example.com</email>
+	    <name>Default Package Maintainer</name>
+	</maintainer>
+	<bugs-to>https://github.com/MADhacking/bash-outlogger/issues</bugs-to>
+	<doc>https://github.com/MADhacking/bash-outlogger</doc>
+    </upstream>
+</pkgmetadata>
 ```
 
-And a `coverage.sh` file:
+### 4. (Optional) Add any overlays required for the build / test to an overlays file.
+
+`.gentoo/overlays`
+
+```
+mad-hacking    https://github.com/MADhacking/overlay.git
+```
+
+### 5. (Optional) Add a `coverage.sh` script to generate test coverage reports.
+
+`.gentoo/coverage.sh`
 
 ```bash
 #!/usr/bin/env bash
@@ -90,7 +104,86 @@ kcov --bash-dont-parse-binary-dir \
      bats -t tests
 ```
 
-This is an example using [bats](https://github.com/bats-core/bats-core) and 
-[kcov](https://github.com/SimonKagstrom/kcov), although many other combinations of test runner and 
-coverage report generator should be possible. The important point to note is that coverage reports
-should be placed in `/var/tmp/coverage` so they can be located by the upload tool.
+Your coverage script will need to output coverage reports to `/var/tmp/coverage`
+
+### 6. Create a GitHub workflow file
+
+`.github/workflows/run-ebuild-tests.yml`
+
+```yaml
+name: Ebuild Tests
+
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '*.*'
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - '.github/**'
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    # Check out the repository
+    - uses: actions/checkout@master
+
+    # Prepare the environment
+    - name: Prepare
+      id: prepare
+      run: |
+        echo "::set-output name=datetime::$(date +"%Y%m%d%H%M")"
+        echo "::set-output name=workspace::${GITHUB_WORKSPACE}"
+        mkdir -p "${GITHUB_WORKSPACE}/distfiles" "${GITHUB_WORKSPACE}/binpkgs"
+
+    # Cache distfiles and binary packages
+    - name: Cache distfiles
+      id: cache-distfiles
+      uses: gerbal/always-cache@v1.0.3
+      with:
+        path: ${{ steps.prepare.outputs.workspace }}/distfiles
+        key: distfiles-${{ steps.prepare.outputs.datetime }}
+        restore-keys: |
+          distfiles-${{ steps.prepare.outputs.datetime }}
+          distfiles
+    - name: Cache binpkgs
+      id: cache-binpkgs
+      uses: gerbal/always-cache@v1.0.3
+      with:
+        path: ${{ steps.prepare.outputs.workspace }}/binpkgs
+        key: binpkgs-${{ steps.prepare.outputs.datetime }}
+        restore-keys: |
+          binpkgs-${{ steps.prepare.outputs.datetime }}
+          binpkgs
+
+    # Run the ebuild tests
+    - uses: hacking-gentoo/action-ebuild-test@v1
+      env:
+        # Optional code coverage token
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      with:
+        # Option security tokens / keys for automatic deployment
+        auth_token: ${{ secrets.PR_TOKEN }}
+        deploy_key: ${{ secrets.DEPLOY_KEY }}
+        overlay_repo: hacking-actions/overlay-playground    
+```
+
+### 7. (Optional) Create tokens / keys for automatic deployment
+
+#### Configuring `PR_TOKEN`
+
+The above workflow requires a [personal access token](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) be configured for the user running the ebuild test action.
+
+This access token will need to be made available to the workflow using the [secrets](https://help.github.com/en/github/automating-your-workflow-with-github-actions/virtual-environments-for-github-actions#creating-and-using-secrets-encrypted-variables)
+feature and will be used to authenticate when creating a new pull request.
+
+#### Configuring `DEPLOY_KEY`
+
+The above workflow also requires a [deploy key](https://developer.github.com/v3/guides/managing-deploy-keys/#deploy-keys)
+be configured for the destination repository.
+
+This deploy key will also need to be made available to the workflow using the [secrets](https://help.github.com/en/github/automating-your-workflow-with-github-actions/virtual-environments-for-github-actions#creating-and-using-secrets-encrypted-variables)
+feature.
