@@ -1,7 +1,20 @@
 # action-ebuild-test
 
-Automatically install an ebuild (including dependencies), run unit tests and (optionally) upload 
-coverage reports to [codecov.io](https://codecov.io/).
+Automatically install an ebuild (including dependencies), run unit tests, (optionally) upload 
+coverage reports to [codecov.io](https://codecov.io/) and (optionally) update a live ebuild in
+a hosted repository.
+
+## Functionality
+
+Once configured pushing to a branch will automatically:
+  * create a new live ebuild from the supplied template
+  * run the ebuild test phase
+  * generate / upload test coverage reports (optional)
+  * deploy to an overlay repository (optional)
+  * create / update a pull request (optional)
+
+Automatic ebuild generation on release testing can be easily included using
+[action-ebuild-release](https://github.com/hacking-gentoo/action-ebuild-release).
 
 ## Basic Use
 
@@ -168,7 +181,7 @@ jobs:
         # Option security tokens / keys for automatic deployment
         auth_token: ${{ secrets.PR_TOKEN }}
         deploy_key: ${{ secrets.DEPLOY_KEY }}
-        overlay_repo: hacking-actions/overlay-playground    
+        overlay_repo: hacking-gentoo/overlay    
 ```
 
 ### 7. (Optional) Create tokens / keys for automatic deployment
