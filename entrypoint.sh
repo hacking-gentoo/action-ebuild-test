@@ -125,6 +125,7 @@ rebase_overlay_branch
 # Add the overlay to repos.conf
 # shellcheck disable=SC2034
 repo_name="$(configure_overlay)"
+infomsg "Added overlay [${repo_name}] to repos.conf"
 
 # Ensure that this ebuild's category is present in categories file.
 check_ebuild_category "${ebuild_cat}"
